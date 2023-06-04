@@ -22,7 +22,8 @@ func main() {
 	ftrd := hasher.StartFilter(l, extFilter)
 	hshd := hasher.StartHasher(ftrd, input)
 	o := hasher.StartOutputWriter(hshd, input, output, fmt)
-	for k := range o {
+	rmwd := hasher.StartInputCleaner(o, input)
+	for k := range rmwd {
 		logrus.WithField("input", k.I).WithField("output", string(k.O)).Info("Item")
 	}
 }

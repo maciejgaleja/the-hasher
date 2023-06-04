@@ -82,9 +82,7 @@ func StartOutputWriter(hks <-chan Item, input, output storage.Storage, fmt strin
 		defer close(ret)
 		for k := range hks {
 			k = formatOutputKey(k, fmt)
-			if output.Exists(k.O) {
-				continue
-			} else {
+			if !output.Exists(k.O) {
 				w, err := output.Create(k.O)
 				if err != nil {
 					logrus.WithError(err).Fatal("Error while writing output")
@@ -97,6 +95,29 @@ func StartOutputWriter(hks <-chan Item, input, output storage.Storage, fmt strin
 				if err != nil {
 					logrus.WithError(err).Fatal("Error while copying form input to output")
 				}
+				err = r.Close()
+				if err != nil {
+					logrus.WithError(err).Fatal("Error while copying form input to output")
+				}
+				err = w.Close()
+				if err != nil {
+					logrus.WithError(err).Fatal("Error while copying form input to output")
+				}
+			}
+			ret <- k
+		}
+	}()
+	return ret
+}
+
+func StartInputCleaner(is <-chan Item, input storage.Storage) <-chan Item {
+	ret := make(chan Item)
+	go func() {
+		defer close(ret)
+		for k := range is {
+			err := input.Delete(k.I)
+			if err != nil {
+				logrus.WithError(err).Fatal("Error while removing from input")
 			}
 			ret <- k
 		}
